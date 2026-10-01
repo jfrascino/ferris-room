@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ferris's Room</title>
+<style>
+  :root{--bg:#0e0d0c;--panel:rgba(20,18,16,.82);--ink:#efe6d8;--dim:#a99c88;--acc:#ff8a3d;--line:rgba(255,235,205,.14)}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:13px/1.45 "Helvetica Neue",Helvetica,Arial,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+  canvas{display:block;outline:none}
+  #ui{position:fixed;inset:0;pointer-events:none}
+  .panel{position:absolute;background:var(--panel);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:10px;pointer-events:auto}
+  #title{left:16px;top:14px;padding:12px 16px}
+  #title h1{margin:0;font:700 17px/1.1 "Futura","Avenir Next",Helvetica,sans-serif;letter-spacing:.04em;text-transform:uppercase}
+  #title h1 b{color:var(--acc)}
+  #title p{margin:4px 0 0;color:var(--dim);font-size:11.5px}
+  #views{left:16px;bottom:16px;padding:8px;display:flex;gap:6px;flex-wrap:wrap;max-width:min(760px,calc(100vw - 32px))}
+  button,.chip{font:600 11.5px/1 "Helvetica Neue",Helvetica,sans-serif;color:var(--ink);background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:7px;padding:8px 10px;cursor:pointer;letter-spacing:.02em}
+  button:hover{background:rgba(255,255,255,.15)} button.on{background:var(--acc);color:#1b1108;border-color:var(--acc)}
+  #tools{right:16px;top:14px;padding:12px 14px;width:236px;display:flex;flex-direction:column;gap:9px}
+  #tools h3{margin:2px 0 0;font:700 10.5px/1 Helvetica,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  #tools label{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--ink);font-size:12px}
+  #tools input[type=range]{width:110px;accent-color:var(--acc)}
+  #tools .row{display:flex;gap:6px;flex-wrap:wrap}
+  #info{right:16px;bottom:16px;width:min(340px,calc(100vw - 32px));padding:12px 14px;display:none}
+  #info h2{margin:0 0 3px;font:700 15px/1.2 "Futura","Avenir Next",Helvetica,sans-serif}
+  #info .id{color:var(--acc);font:11px Menlo,monospace}
+  #info p{margin:6px 0 0;color:#d9cfbf} #info .meta{margin-top:8px;color:var(--dim);font-size:11.5px}
+  #tip{position:fixed;pointer-events:none;background:rgba(10,9,8,.9);border:1px solid var(--line);color:var(--ink);padding:5px 9px;border-radius:6px;font-size:11.5px;display:none;z-index:5;max-width:280px}
+  #loading{position:fixed;inset:0;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;background:var(--bg);z-index:20;transition:opacity .6s}
+  #loading .bar{width:260px;height:3px;background:#2a2622;border-radius:2px;overflow:hidden}#loading .bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
+  #loading h2{margin:0;font:700 22px "Futura","Avenir Next",Helvetica,sans-serif;letter-spacing:.12em;text-transform:uppercase}
+  #loading small{color:var(--dim)}
+  #hint{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;color:var(--dim);font-size:11.5px;pointer-events:none;opacity:.85;text-align:center}
+  @media (max-width:760px){#tools{width:auto;left:16px;right:16px;top:auto;bottom:74px;flex-direction:row;flex-wrap:wrap}#hint{display:none}#info{bottom:130px}}
+</style>
+</head>
+<body>
+<div id="loading"><h2>Ferris's Room</h2><div class="bar"><i id="lbar"></i></div><small id="lmsg">Loading…</small></div>
+<div id="ui">
+  <div id="title" class="panel"><h1>Ferris's <b>Room</b></h1><p>Ferris Bueller's Day Off · 1986 · scale diorama</p></div>
+  <div id="tools" class="panel">
+    <h3>View</h3>
+    <div class="row"><button id="bIso" class="on">Isometric</button><button id="bPersp">Perspective</button><button id="bInside">Inside</button></div>
+    <label>Walls cutaway <input type="checkbox" id="cCut" checked></label>
+    <label>Ceiling <input type="checkbox" id="cCeil"></label>
+    <h3>Scene</h3>
+    <label>Lighting <select id="sLight"><option value="diorama">Diorama (bright)</option><option value="film">Film (as photographed)</option><option value="day">Daylight</option><option value="work">Work light</option><option value="evening">Evening (lamps)</option><option value="night">Night (one lamp)</option><option value="dark">Lights out (moonlight)</option></select></label>
+    <label>Brightness <input type="range" id="rDim" min="0.05" max="1.5" step="0.05" value="1"></label>
+    <label>Bed <select id="sBed"><option value="dummy">The dummy (mid-film)</option><option value="opening">Opening: Ferris "sick"</option><option value="finale">Finale bedding (evening)</option><option value="empty">Empty / rumpled</option></select></label>
+    <label>Blinds <select id="sWin"><option value="down">Lowered (computer scenes)</option><option value="up">Raised (morning scenes)</option></select></label>
+    <label>Door <select id="sDoor"><option value="0">Closed</option><option value="95">Open</option></select></label>
+    <label>Computer <select id="sPc"><option value="paint">Paint program</option><option value="off">Off</option></select></label>
+    <label>Exposure <input type="range" id="rExp" min="0.1" max="2.2" step="0.05" value="1"></label>
+    <label>Ambient occlusion <input type="checkbox" id="cAO"></label>
+    <label>Glow <input type="checkbox" id="cGlow"></label>
+    <label>Labels <input type="checkbox" id="cLabels"></label>
+  </div>
+  <div id="views" class="panel"></div>
+  <div id="info" class="panel"><h2 id="iName"></h2><div class="id" id="iId"></div><p id="iText"></p><div class="meta" id="iMeta"></div></div>
+</div>
+<div id="tip"></div>
+<div id="hint">Drag to orbit · scroll to zoom · right-drag to pan · click any object to inspect · double-click to fly to it</div>
+<script type="module" src="./app.js"></script>
+</body>
+</html>
